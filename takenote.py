@@ -16,6 +16,7 @@ import os
 import shutil
 from subprocess import call
 import datetime
+import argparse
 
 # Configuration
 note_dir = "/Users/bpetrin/Documents/work_logs/"
@@ -43,15 +44,10 @@ def noteFileNameForDayIfExists(date):
 
     return potential_file_name
 
-def createNoteFileForDay(date):
+def noteFileNameBeforeDate(date):
     """
-        Creates and returns a new note file for this day stating with the contents of
-        the most recent note file
+        Returns filename and date for most recent notefile before the date passed in
     """
-    new_file_name = noteFileNameForDate(date)
-
-    # we need to locate the last note file that was written. This may be
-    # yesterday or it may be some time ago (due to weekend or vacation)
 
     day_delta = datetime.timedelta(days = 1)
     last_note_file_name = None
@@ -59,23 +55,45 @@ def createNoteFileForDay(date):
     try_count = 0
 
     while try_count < max_tries and last_note_file_name is None:
-        try_count = try_count + 1
         date = date - day_delta
         last_note_file_name = noteFileNameForDayIfExists(date)
+        try_count = try_count + 1
 
-    if last_note_file_name is not None:
-        # copy the last note contents to this one
-        shutil.copy(last_note_file_name, new_file_name)
+    return (last_note_file_name, date)
+
+def createNoteFileForDay(date):
+    """
+        Creates and returns a new note file for this day Stating with the contents of
+        the most recent note file
+    """
+    new_file_name = noteFileNameForDate(date)
+    old_file_name, _ = noteFileNameBeforeDate(date)
+
+    if old_file_name is not None:
+        shutil.copy(old_file_name, new_file_name)
 
     return new_file_name
 
 def main():
+
+    parser = argparse.ArgumentParser(description='Manage and edit notes')
+    parser.add_argument('-n', dest='notes_to_skip', metavar='N', type=int, default=0, help='Edit the Nth youngest note, default is 0 (today).')
+    args = parser.parse_args()
+
     os.chdir(note_dir)
     today = datetime.date.today()
 
-    note_file_name = noteFileNameForDayIfExists(today)
-    if note_file_name is None:
-        note_file_name = createNoteFileForDay(today)
+    if args.notes_to_skip == 0:
+        note_file_name = noteFileNameForDayIfExists(today)
+        if note_file_name is None:
+            note_file_name = createNoteFileForDay(today)
+    else:
+        note_file_name = None
+        notes_to_skip = args.notes_to_skip
+        date = today
+        while notes_to_skip > 0:
+            note_file_name, date = noteFileNameBeforeDate(date)
+            notes_to_skip -= 1
 
     openNoteFile(note_file_name)
 
