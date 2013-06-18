@@ -7,7 +7,6 @@
     Notes are stored in a configurable directory with a configurable name format.
 
     TODO
-        Allow jumping into yesterday's note with an arg, or the notes directory
         Warn if can't find previous note file
 
 """
